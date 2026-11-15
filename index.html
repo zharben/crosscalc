@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>CrossCalc — Math Crossword Adventure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Top Header Bar -->
+    <header class="top-bar">
+      <div class="brand" id="brandLogo" title="CrossCalc">
+        <div class="brand-icon">
+          <span>+</span><span>−</span>
+          <span>÷</span><span>=</span>
+        </div>
+        <div class="brand-text">
+          <h1>CrossCalc</h1>
+          <span id="difficultyBadge" class="difficulty-badge easy">Easy</span>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-stats">
+          <span class="stat-pill" id="equationsProgressPill">
+            <span class="stat-icon">⭐</span>
+            <span id="equationsSolvedText">0 / 6 Equations</span>
+          </span>
+          <span class="stat-pill timer-pill" id="timerPill">
+            <span class="stat-icon">⏱️</span>
+            <span id="timerText">0:00</span>
+          </span>
+        </div>
+        <div class="progress-bar-track" aria-label="Puzzle Progress">
+          <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="zoomOutBtn" class="icon-btn" title="Zoom Out" aria-label="Zoom Out">−</button>
+        <button id="zoomResetBtn" class="icon-btn text-icon-btn" title="Fit Board to Screen" aria-label="Fit Board">Fit</button>
+        <button id="zoomInBtn" class="icon-btn" title="Zoom In" aria-label="Zoom In">+</button>
+        <button id="clearBoardBtn" class="action-btn secondary-btn" title="Reset your placed numbers">
+          <span>↺</span> Reset
+        </button>
+        <button id="newGameBtn" class="action-btn primary-btn">
+          <span>✨</span> New Game
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace: Board + Sidebar -->
+    <main class="game-workspace">
+      <!-- Crossword Board Area -->
+      <section class="board-stage" id="boardStage" aria-label="Math Crossword Grid">
+        <div class="board-viewport" id="boardViewport">
+          <div class="board-grid" id="boardGrid"></div>
+        </div>
+
+        <!-- Floating equation helper / status toast -->
+        <div class="board-helper-banner" id="boardHelperBanner">
+          Tap an empty square on the board, then tap a number on the right!
+        </div>
+      </section>
+
+      <!-- Number Sidebar (Tile Pool or Keypad) -->
+      <aside class="number-sidebar" id="numberSidebar" aria-label="Number Selection Sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title-row">
+            <h2 id="sidebarTitle">Number Tiles</h2>
+            <button id="toggleHintsBtn" class="hints-toggle-btn hidden" title="Switch between Keypad and Number Tile Pool">
+              💡 Show Tile Pool
+            </button>
+          </div>
+          <p class="sidebar-subtitle" id="sidebarSubtitle">
+            Tap or drag a number into the selected square
+          </p>
+        </div>
+
+        <!-- Tile Pool Mode Container -->
+        <div id="tilePoolContainer" class="sidebar-body tile-pool-grid"></div>
+
+        <!-- Keypad Mode Container -->
+        <div id="keypadContainer" class="sidebar-body keypad-container hidden"></div>
+
+        <!-- Bottom Controls in Sidebar -->
+        <div class="sidebar-footer">
+          <button id="eraseSquareBtn" class="sidebar-action-btn erase-btn" disabled>
+            <span>⌫</span> Clear Selected Square
+          </button>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Start / New Game Modal (Difficulty Selection) -->
+    <div id="startModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="startModalTitle">
+      <div class="modal-card start-modal-card">
+        <div class="modal-header">
+          <div class="modal-logo-badge">
+            <span>+</span><span>−</span><span>÷</span><span>=</span>
+          </div>
+          <h2 id="startModalTitle">Welcome to CrossCalc!</h2>
+          <p class="modal-subtitle">
+            Complete the interlocking math equations by filling in the missing numbers!
+          </p>
+        </div>
+
+        <div class="difficulty-selector-label">Choose Your Difficulty to Start:</div>
+        <div class="difficulty-grid" role="radiogroup" aria-label="Select Difficulty">
+          <button class="difficulty-card selected" data-difficulty="easy" type="button">
+            <div class="diff-card-top">
+              <span class="diff-emoji">🌱</span>
+              <span class="diff-name">Easy</span>
+              <span class="diff-tag">Tile Pool</span>
+            </div>
+            <ul class="diff-details">
+              <li><strong>5–10</strong> equations</li>
+              <li>Numbers up to <strong>10</strong> (1–5 extra common)</li>
+              <li><strong>+</strong> and <strong>−</strong> only</li>
+            </ul>
+          </button>
+
+          <button class="difficulty-card" data-difficulty="medium" type="button">
+            <div class="diff-card-top">
+              <span class="diff-emoji">🚀</span>
+              <span class="diff-name">Medium</span>
+              <span class="diff-tag">Tile Pool</span>
+            </div>
+            <ul class="diff-details">
+              <li><strong>7–14</strong> equations</li>
+              <li>Numbers up to <strong>10</strong> (6–10 extra common)</li>
+              <li><strong>+</strong>, <strong>−</strong>, and <strong>÷</strong> (by 2 or 5)</li>
+            </ul>
+          </button>
+
+          <button class="difficulty-card" data-difficulty="hard" type="button">
+            <div class="diff-card-top">
+              <span class="diff-emoji">🔥</span>
+              <span class="diff-name">Hard</span>
+              <span class="diff-tag">Keypad + Hints</span>
+            </div>
+            <ul class="diff-details">
+              <li><strong>7–14</strong> equations</li>
+              <li>Numbers up to <strong>20</strong></li>
+              <li><strong>+</strong>, <strong>−</strong>, and <strong>÷</strong> (by 2, 5, or 10)</li>
+            </ul>
+          </button>
+
+          <button class="difficulty-card" data-difficulty="insane" type="button">
+            <div class="diff-card-top">
+              <span class="diff-emoji">⚡</span>
+              <span class="diff-name">Insane</span>
+              <span class="diff-tag">Keypad + Hints</span>
+            </div>
+            <ul class="diff-details">
+              <li><strong>10–20</strong> equations</li>
+              <li>Numbers up to <strong>50</strong></li>
+              <li><strong>+</strong>, <strong>−</strong>, and all whole-number <strong>÷</strong></li>
+            </ul>
+          </button>
+        </div>
+
+        <div class="modal-footer">
+          <button id="cancelNewGameBtn" class="modal-btn cancel-btn hidden" type="button">
+            Keep Playing Current Game
+          </button>
+          <button id="startGameBtn" class="modal-btn start-btn" type="button">
+            Start Puzzle! 🎮
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="victoryModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
+      <div class="modal-card victory-modal-card">
+        <div class="victory-trophy">🏆</div>
+        <h2 id="victoryTitle">Awesome Job!</h2>
+        <p class="victory-subtitle">You solved every single equation on the board!</p>
+
+        <div class="victory-stats-grid">
+          <div class="victory-stat-box">
+            <span class="v-stat-label">Difficulty</span>
+            <span class="v-stat-value" id="victoryDifficulty">Easy</span>
+          </div>
+          <div class="victory-stat-box">
+            <span class="v-stat-label">Equations</span>
+            <span class="v-stat-value" id="victoryEquations">8</span>
+          </div>
+          <div class="victory-stat-box">
+            <span class="v-stat-label">Time</span>
+            <span class="v-stat-value" id="victoryTime">1:24</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="playAgainSameDiffBtn" class="modal-btn secondary-modal-btn" type="button">
+            Play Again (<span id="sameDiffLabel">Easy</span>)
+          </button>
+          <button id="changeDiffVictoryBtn" class="modal-btn start-btn" type="button">
+            New Game / Change Difficulty ✨
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
