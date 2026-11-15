@@ -1,6 +1,6 @@
 # CrossCalc — Math Crossword Game
 
-**CrossCalc** is a tablet-optimized educational math crossword game built for GitHub Pages. Players complete interlocking horizontal and vertical math equations by selecting or dragging integers from the sidebar.
+**CrossCalc** is a tablet-optimized educational math crossword game built with **Vite.js** and deployed via **GitHub Actions** to GitHub Pages. Players complete interlocking horizontal and vertical math equations by selecting or dragging integers from the sidebar.
 
 ## Features & Rules
 
@@ -24,10 +24,27 @@ Difficulty is selected when starting a new game:
 | **Hard** | 7 – 14 | `1–20` (`6–10` 2× as likely as `1–5`, which are 2× as likely as `11–20`) | `+`, `−`, `÷` (denominator `2`, `5`, or `10`) | Keypad + Optional **Hints** Tile Pool toggle |
 | **Insane** | 10 – 20 | `1–50` (uniform random) | `+`, `−`, `÷` (any whole-number denominator) | Keypad + Optional **Hints** Tile Pool toggle |
 
-## Hosting on GitHub Pages
+## Local Development (Vite.js)
 
-This project consists of static HTML, CSS, and JavaScript files (`index.html`, `styles.css`, `app.js`) with zero build dependencies:
+```bash
+# Install dependencies
+npm install
 
-1. Push the repository to GitHub.
-2. Go to **Settings → Pages** in your GitHub repository.
-3. Under **Build and deployment**, select **Deploy from a branch**, choose your main branch and `/ (root)` folder, and click **Save**.
+# Start Vite development server
+npm run dev
+
+# Build production bundle into ./dist
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+## GitHub Pages Deployment Workflow
+
+This repository includes an automated GitHub Actions workflow at `.github/workflows/deploy.yml` that builds the Vite app and deploys `./dist` to GitHub Pages whenever changes are pushed to `main`.
+
+To enable it in your GitHub repository:
+1. Go to **Settings → Pages**.
+2. Under **Build and deployment → Source**, select **GitHub Actions**.
+3. Push to the `main` branch (or trigger the workflow manually from the **Actions** tab).
