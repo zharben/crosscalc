@@ -24,7 +24,7 @@ export const DIFFICULTY_CONFIG = {
     minEquations: 7,
     maxEquations: 14,
     maxInt: 10,
-    ops: ['+', '-', '/'],
+    ops: ['+', '-', 'x', '/'],
     divDenominators: [2, 5],
     defaultSidebarMode: 'pool',
     allowHintsToggle: false,
@@ -39,7 +39,7 @@ export const DIFFICULTY_CONFIG = {
     minEquations: 7,
     maxEquations: 14,
     maxInt: 20,
-    ops: ['+', '-', '/'],
+    ops: ['+', '-', 'x', '/'],
     divDenominators: [2, 5, 10],
     defaultSidebarMode: 'keypad',
     allowHintsToggle: true,
@@ -56,7 +56,7 @@ export const DIFFICULTY_CONFIG = {
     minEquations: 10,
     maxEquations: 20,
     maxInt: 50,
-    ops: ['+', '-', '/'],
+    ops: ['+', '-', 'x', '/'],
     divDenominators: null, // Any integer denominator producing whole number result
     defaultSidebarMode: 'keypad',
     allowHintsToggle: true,
@@ -69,6 +69,7 @@ export const DIFFICULTY_CONFIG = {
 export const DISPLAY_OP = {
   '+': '+',
   '-': '−',
+  'x': '×',
   '/': '÷',
   '=': '='
 };
@@ -79,7 +80,7 @@ export const DISPLAY_OP = {
  */
 export function buildCandidateEquations(config) {
   const { maxInt, ops, divDenominators, getWeight } = config;
-  const byOp = { '+': [], '-': [], '/': [] };
+  const byOp = { '+': [], '-': [], 'x': [], '/': [] };
 
   for (let a = 1; a <= maxInt; a++) {
     for (let b = 1; b <= maxInt; b++) {
@@ -99,6 +100,14 @@ export function buildCandidateEquations(config) {
           byOp['-'].push({ a, op: '-', b, c, weight: w });
         }
       }
+      // Multiplication
+      if (ops.includes('x')) {
+        const c = a * b;
+        if (c >= 1 && c <= maxInt) {
+          const w = getWeight(a) * getWeight(b) * getWeight(c);
+          byOp['x'].push({ a, op: 'x', b, c, weight: w });
+        }
+      }
       // Division (whole number results only)
       if (ops.includes('/')) {
         const validDenom = !divDenominators || divDenominators.includes(b);
@@ -113,13 +122,14 @@ export function buildCandidateEquations(config) {
     }
   }
 
-  // Normalize operator group weights so division appears regularly when allowed,
+  // Normalize operator group weights so multiplication and division appear regularly when allowed,
   // while preserving relative number weights inside each operation.
   const all = [];
   const activeOps = ops.filter(op => byOp[op] && byOp[op].length > 0);
   const opShare = {
-    '+': 0.42,
-    '-': 0.42,
+    '+': 0.32,
+    '-': 0.32,
+    'x': 0.20,
     '/': 0.16
   };
 
@@ -503,6 +513,7 @@ export function isEquationMathValid(a, op, b, c) {
   if (a == null || b == null || c == null) return false;
   if (op === '+') return a + b === c;
   if (op === '-') return a - b === c;
+  if (op === 'x' || op === '*') return a * b === c;
   if (op === '/') return b !== 0 && a % b === 0 && a / b === c;
   return false;
 }

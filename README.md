@@ -6,7 +6,7 @@
 
 - **Crossword-Style Chaining**: Equations intersect at shared number squares. Solving one equation reveals numbers that help solve connected equations!
 - **No Zeroes**: All integers on the board are positive whole numbers ($\ge 1$).
-- **Standard 5-Cell Equations**: Every equation follows `A [op] B = C` using `+`, `−`, or `÷` (with whole-number division results only).
+- **Standard 5-Cell Equations**: Every equation follows `A [op] B = C` using `+`, `−`, `×`, or `÷` (with whole-number division results only).
 - **Immediate Equation Highlighting**: Completed equations immediately light up green when mathematically valid (or gently shake in red if they don't add up).
 - **Tablet-First Experience**:
   - Supports both **tap-to-place** and **touch drag-and-drop** for number tiles.
@@ -20,9 +20,9 @@ Difficulty is selected when starting a new game:
 | Difficulty | Equations | Number Range & Weighting | Allowed Operations | Sidebar Mode |
 | :--- | :--- | :--- | :--- | :--- |
 | **Easy** | 5 – 10 | `1–10` (`1–5` are 2× as likely as `6–10`) | `+`, `−` | Tile Pool |
-| **Medium** | 7 – 14 | `1–10` (`6–10` are 2× as likely as `1–5`) | `+`, `−`, `÷` (denominator `2` or `5`) | Tile Pool |
-| **Hard** | 7 – 14 | `1–20` (`6–10` 2× as likely as `1–5`, which are 2× as likely as `11–20`) | `+`, `−`, `÷` (denominator `2`, `5`, or `10`) | Keypad + Optional **Hints** Tile Pool toggle |
-| **Insane** | 10 – 20 | `1–50` (uniform random) | `+`, `−`, `÷` (any whole-number denominator) | Keypad + Optional **Hints** Tile Pool toggle |
+| **Medium** | 7 – 14 | `1–10` (`6–10` are 2× as likely as `1–5`) | `+`, `−`, `×`, `÷` (denominator `2` or `5`) | Tile Pool |
+| **Hard** | 7 – 14 | `1–20` (`6–10` 2× as likely as `1–5`, which are 2× as likely as `11–20`) | `+`, `−`, `×`, `÷` (denominator `2`, `5`, or `10`) | Keypad + Optional **Hints** Tile Pool toggle |
+| **Insane** | 10 – 20 | `1–50` (uniform random) | `+`, `−`, `×`, `÷` (any whole-number denominator) | Keypad + Optional **Hints** Tile Pool toggle |
 
 ## Local Development (Vite.js)
 
