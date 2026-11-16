@@ -79,8 +79,11 @@ export const DISPLAY_OP = {
  * Every equation is [a, op, b, '=', c] with 1 <= a, b, c <= maxInt.
  */
 export function buildCandidateEquations(config) {
-  const { maxInt, ops, divDenominators, getWeight } = config;
+  const { id, maxInt, ops, divDenominators, getWeight } = config;
   const byOp = { '+': [], '-': [], 'x': [], '/': [] };
+
+  // Scale factor to push Hard and Insane toward increasingly large multiplication & division problems
+  const sizeExponent = id === 'insane' ? 3.0 : id === 'hard' ? 2.0 : 0;
 
   for (let a = 1; a <= maxInt; a++) {
     for (let b = 1; b <= maxInt; b++) {
@@ -100,21 +103,27 @@ export function buildCandidateEquations(config) {
           byOp['-'].push({ a, op: '-', b, c, weight: w });
         }
       }
-      // Multiplication
-      if (ops.includes('x')) {
+      // Multiplication (avoid trivial 1x factors so problems are meaningful)
+      if (ops.includes('x') && a > 1 && b > 1) {
         const c = a * b;
         if (c >= 1 && c <= maxInt) {
-          const w = getWeight(a) * getWeight(b) * getWeight(c);
+          let w = getWeight(a) * getWeight(b) * getWeight(c);
+          if (sizeExponent > 0) {
+            w *= Math.pow(c / maxInt, sizeExponent) * Math.pow(Math.min(a, b), 1.2);
+          }
           byOp['x'].push({ a, op: 'x', b, c, weight: w });
         }
       }
-      // Division (whole number results only)
-      if (ops.includes('/')) {
+      // Division (whole number results only, avoiding results of 1 and dividing by 1)
+      if (ops.includes('/') && b > 1) {
         const validDenom = !divDenominators || divDenominators.includes(b);
         if (validDenom && a % b === 0) {
           const c = a / b;
-          if (c >= 1 && c <= maxInt) {
-            const w = getWeight(a) * getWeight(b) * getWeight(c);
+          if (c > 1 && c <= maxInt) {
+            let w = getWeight(a) * getWeight(b) * getWeight(c);
+            if (sizeExponent > 0) {
+              w *= Math.pow(a / maxInt, sizeExponent) * Math.pow(Math.min(b, c), 1.2);
+            }
             byOp['/'].push({ a, op: '/', b, c, weight: w });
           }
         }
@@ -122,21 +131,22 @@ export function buildCandidateEquations(config) {
     }
   }
 
-  // Normalize operator group weights so multiplication and division appear regularly when allowed,
-  // while preserving relative number weights inside each operation.
+  // Normalize operator group weights so multiplication and division appear regularly,
+  // and increase their presence on Hard and Insane.
   const all = [];
   const activeOps = ops.filter(op => byOp[op] && byOp[op].length > 0);
-  const opShare = {
-    '+': 0.32,
-    '-': 0.32,
-    'x': 0.20,
-    '/': 0.16
+  const opShareByDifficulty = {
+    easy: { '+': 0.5, '-': 0.5 },
+    medium: { '+': 0.32, '-': 0.32, 'x': 0.20, '/': 0.16 },
+    hard: { '+': 0.26, '-': 0.26, 'x': 0.26, '/': 0.22 },
+    insane: { '+': 0.20, '-': 0.20, 'x': 0.32, '/': 0.28 }
   };
+  const opShare = opShareByDifficulty[id] || opShareByDifficulty.medium;
 
   for (const op of activeOps) {
     const list = byOp[op];
     const totalW = list.reduce((sum, item) => sum + item.weight, 0) || 1;
-    const targetShare = activeOps.length === 2 ? 0.5 : (opShare[op] || 0.33);
+    const targetShare = opShare[op] || 1 / activeOps.length;
     for (const item of list) {
       all.push({
         ...item,
@@ -515,5 +525,35 @@ export function isEquationMathValid(a, op, b, c) {
   if (op === '-') return a - b === c;
   if (op === 'x' || op === '*') return a * b === c;
   if (op === '/') return b !== 0 && a % b === 0 && a / b === c;
+  return false;
+}
+
+/**
+ * Checks whether an equation's current values are mathematically invalid.
+ * - If all 3 numbers are filled, checks if `a op b = c` is false.
+ * - If 2 numbers are filled, checks if no valid positive integer (1..maxInt) can complete it.
+ */
+export function isEquationStateInvalid(valA, op, valB, valC, maxInt = 50) {
+  const filledCount =
+    (valA !== null && valA !== undefined ? 1 : 0) +
+    (valB !== null && valB !== undefined ? 1 : 0) +
+    (valC !== null && valC !== undefined ? 1 : 0);
+
+  if (filledCount === 3) {
+    return !isEquationMathValid(valA, op, valB, valC);
+  }
+
+  if (filledCount === 2) {
+    for (let candidate = 1; candidate <= maxInt; candidate++) {
+      const a = valA ?? candidate;
+      const b = valB ?? candidate;
+      const c = valC ?? candidate;
+      if (isEquationMathValid(a, op, b, c)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   return false;
 }

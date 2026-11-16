@@ -294,10 +294,15 @@ h1, h2, h3, .cell, .tile-btn, .keypad-btn, .difficulty-badge {
   flex: 1;
   overflow: auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 28px;
+  padding: 36px;
   touch-action: pan-x pan-y;
+  scroll-behavior: smooth;
+  cursor: grab;
+}
+
+.board-viewport.panning {
+  cursor: grabbing;
+  scroll-behavior: auto;
 }
 
 .board-grid {
@@ -310,7 +315,90 @@ h1, h2, h3, .cell, .tile-btn, .keypad-btn, .difficulty-badge {
   box-shadow: var(--shadow-md);
   border: 2px solid rgba(255, 255, 255, 0.9);
   margin: auto;
-  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Directional Off-Screen Scroll Indicators */
+.scroll-hint {
+  position: absolute;
+  z-index: 14;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 2px solid #818cf8;
+  background: rgba(79, 70, 229, 0.92);
+  color: #ffffff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.32);
+  cursor: pointer;
+  transition: transform 0.18s ease, background-color 0.18s ease, opacity 0.2s ease;
+}
+
+.scroll-hint:hover {
+  background: #4338ca;
+}
+
+.scroll-hint.has-unsolved {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+}
+
+.scroll-hint-arrow {
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.scroll-hint-top {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: nudgeUp 1.6s infinite ease-in-out;
+}
+
+.scroll-hint-bottom {
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: nudgeDown 1.6s infinite ease-in-out;
+}
+
+.scroll-hint-left {
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: nudgeLeft 1.6s infinite ease-in-out;
+}
+
+.scroll-hint-right {
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: nudgeRight 1.6s infinite ease-in-out;
+}
+
+@keyframes nudgeUp {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -4px); }
+}
+
+@keyframes nudgeDown {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 4px); }
+}
+
+@keyframes nudgeLeft {
+  0%, 100% { transform: translate(0, -50%); }
+  50% { transform: translate(-4px, -50%); }
+}
+
+@keyframes nudgeRight {
+  0%, 100% { transform: translate(0, -50%); }
+  50% { transform: translate(4px, -50%); }
 }
 
 /* Board Cells */

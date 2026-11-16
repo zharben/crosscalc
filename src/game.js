@@ -1,4 +1,9 @@
-import { DISPLAY_OP, generateBoard, isEquationMathValid } from './generator.js';
+import {
+  DISPLAY_OP,
+  generateBoard,
+  isEquationMathValid,
+  isEquationStateInvalid
+} from './generator.js';
 
 export class CrossCalcGame {
   constructor() {
@@ -29,11 +34,21 @@ export class CrossCalcGame {
     this.boardGrid = document.getElementById('boardGrid');
     this.boardHelperBanner = document.getElementById('boardHelperBanner');
 
+    this.scrollHintTop = document.getElementById('scrollHintTop');
+    this.scrollHintBottom = document.getElementById('scrollHintBottom');
+    this.scrollHintLeft = document.getElementById('scrollHintLeft');
+    this.scrollHintRight = document.getElementById('scrollHintRight');
+    this.scrollHintTopText = document.getElementById('scrollHintTopText');
+    this.scrollHintBottomText = document.getElementById('scrollHintBottomText');
+    this.scrollHintLeftText = document.getElementById('scrollHintLeftText');
+    this.scrollHintRightText = document.getElementById('scrollHintRightText');
+
     this.sidebarTitle = document.getElementById('sidebarTitle');
     this.sidebarSubtitle = document.getElementById('sidebarSubtitle');
     this.toggleHintsBtn = document.getElementById('toggleHintsBtn');
     this.tilePoolContainer = document.getElementById('tilePoolContainer');
     this.keypadContainer = document.getElementById('keypadContainer');
+    this.sidebarFooter = document.getElementById('sidebarFooter');
     this.eraseSquareBtn = document.getElementById('eraseSquareBtn');
 
     this.zoomInBtn = document.getElementById('zoomInBtn');
@@ -98,9 +113,29 @@ export class CrossCalcGame {
     });
 
     // Zoom controls
-    this.zoomInBtn.addEventListener('click', () => this.adjustZoom(0.12));
-    this.zoomOutBtn.addEventListener('click', () => this.adjustZoom(-0.12));
+    this.zoomInBtn.addEventListener('click', () => this.adjustZoom(0.15));
+    this.zoomOutBtn.addEventListener('click', () => this.adjustZoom(-0.15));
     this.zoomResetBtn.addEventListener('click', () => this.fitBoardToViewport());
+
+    // Scroll & Pan events for off-screen board indicators
+    this.boardViewport.addEventListener('scroll', () => this.updateScrollIndicators(), {
+      passive: true
+    });
+    this.initViewportPanning();
+
+    // Tapping a directional indicator scrolls toward that off-screen area
+    this.scrollHintTop.addEventListener('click', () => {
+      this.boardViewport.scrollBy({ top: -220, behavior: 'smooth' });
+    });
+    this.scrollHintBottom.addEventListener('click', () => {
+      this.boardViewport.scrollBy({ top: 220, behavior: 'smooth' });
+    });
+    this.scrollHintLeft.addEventListener('click', () => {
+      this.boardViewport.scrollBy({ left: -220, behavior: 'smooth' });
+    });
+    this.scrollHintRight.addEventListener('click', () => {
+      this.boardViewport.scrollBy({ left: 220, behavior: 'smooth' });
+    });
 
     window.addEventListener('resize', () => {
       if (this.board) this.fitBoardToViewport();
@@ -204,8 +239,8 @@ export class CrossCalcGame {
   fitBoardToViewport() {
     if (!this.board) return;
     const viewportRect = this.boardViewport.getBoundingClientRect();
-    const availW = Math.max(240, viewportRect.width - 48);
-    const availH = Math.max(240, viewportRect.height - 48);
+    const availW = Math.max(240, viewportRect.width - 72);
+    const availH = Math.max(240, viewportRect.height - 72);
 
     const { rows, cols } = this.board;
     const gap = 5;
@@ -213,21 +248,131 @@ export class CrossCalcGame {
 
     const maxCellW = Math.floor((availW - padding - (cols - 1) * gap) / cols);
     const maxCellH = Math.floor((availH - padding - (rows - 1) * gap) / rows);
-    const idealCellSize = Math.max(36, Math.min(68, Math.min(maxCellW, maxCellH)));
+    // Keep cells at least 44px so touch targets remain comfortable on tablets
+    const idealCellSize = Math.max(44, Math.min(68, Math.min(maxCellW, maxCellH)));
 
-    document.documentElement.style.setProperty('--cell-size', `${idealCellSize}px`);
-    document.documentElement.style.setProperty(
-      '--cell-font-size',
-      `${Math.max(1.0, idealCellSize * 0.026).toFixed(2)}rem`
-    );
-
+    this.baseCellSize = idealCellSize;
     this.zoomScale = 1;
-    this.boardGrid.style.transform = `scale(1)`;
+    this.applyCellSize(idealCellSize);
   }
 
   adjustZoom(delta) {
-    this.zoomScale = Math.max(0.6, Math.min(1.6, this.zoomScale + delta));
-    this.boardGrid.style.transform = `scale(${this.zoomScale})`;
+    if (!this.board) return;
+    this.zoomScale = Math.max(0.65, Math.min(1.75, this.zoomScale + delta));
+    const newCellSize = Math.round((this.baseCellSize || 52) * this.zoomScale);
+    this.applyCellSize(newCellSize);
+  }
+
+  applyCellSize(cellSize) {
+    document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
+    document.documentElement.style.setProperty(
+      '--cell-font-size',
+      `${Math.max(1.0, cellSize * 0.026).toFixed(2)}rem`
+    );
+    requestAnimationFrame(() => this.updateScrollIndicators());
+  }
+
+  initViewportPanning() {
+    let isPointerDown = false;
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    let startScrollTop = 0;
+
+    this.boardViewport.addEventListener('pointerdown', e => {
+      if (e.button !== undefined && e.button !== 0) return;
+      isPointerDown = true;
+      isPanning = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      startScrollLeft = this.boardViewport.scrollLeft;
+      startScrollTop = this.boardViewport.scrollTop;
+    });
+
+    window.addEventListener('pointermove', e => {
+      if (!isPointerDown) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!isPanning && Math.hypot(dx, dy) > 8) {
+        isPanning = true;
+        this.boardViewport.classList.add('panning');
+      }
+      if (isPanning) {
+        this.boardViewport.scrollLeft = startScrollLeft - dx;
+        this.boardViewport.scrollTop = startScrollTop - dy;
+      }
+    });
+
+    const endPan = () => {
+      if (!isPointerDown) return;
+      if (isPanning) {
+        this.wasJustPanning = true;
+        setTimeout(() => {
+          this.wasJustPanning = false;
+        }, 60);
+      }
+      isPointerDown = false;
+      isPanning = false;
+      this.boardViewport.classList.remove('panning');
+    };
+
+    window.addEventListener('pointerup', endPan);
+    window.addEventListener('pointercancel', endPan);
+  }
+
+  /**
+   * Checks whether the board extends past any edge of the visible viewport
+   * and shows directional indicators telling the player where to drag.
+   */
+  updateScrollIndicators() {
+    if (!this.board || !this.boardViewport) return;
+
+    const vp = this.boardViewport;
+    const threshold = 10;
+
+    const hasTop = vp.scrollTop > threshold;
+    const hasBottom = vp.scrollHeight - vp.clientHeight - vp.scrollTop > threshold;
+    const hasLeft = vp.scrollLeft > threshold;
+    const hasRight = vp.scrollWidth - vp.clientWidth - vp.scrollLeft > threshold;
+
+    // Count how many empty playable squares are currently off-screen in each direction
+    const vpRect = vp.getBoundingClientRect();
+    let emptyTop = 0;
+    let emptyBottom = 0;
+    let emptyLeft = 0;
+    let emptyRight = 0;
+
+    for (const [key, el] of this.cellElements.entries()) {
+      const cell = this.board.grid.get(key);
+      if (!cell || cell.type !== 'num' || cell.prefilled || cell.userValue !== null) {
+        continue;
+      }
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      if (centerY < vpRect.top + 6) emptyTop++;
+      if (centerY > vpRect.bottom - 6) emptyBottom++;
+      if (centerX < vpRect.left + 6) emptyLeft++;
+      if (centerX > vpRect.right - 6) emptyRight++;
+    }
+
+    const updateHint = (btnEl, textEl, isVisible, emptyCount, dragPrompt) => {
+      btnEl.classList.toggle('hidden', !isVisible);
+      btnEl.classList.toggle('has-unsolved', emptyCount > 0);
+      if (isVisible) {
+        textEl.textContent =
+          emptyCount > 0
+            ? `${dragPrompt} (${emptyCount} empty)`
+            : dragPrompt;
+      }
+    };
+
+    updateHint(this.scrollHintTop, this.scrollHintTopText, hasTop, emptyTop, 'Drag down for more');
+    updateHint(this.scrollHintBottom, this.scrollHintBottomText, hasBottom, emptyBottom, 'Drag up for more');
+    updateHint(this.scrollHintLeft, this.scrollHintLeftText, hasLeft, emptyLeft, 'Drag right for more');
+    updateHint(this.scrollHintRight, this.scrollHintRightText, hasRight, emptyRight, 'Drag left for more');
   }
 
   renderBoard() {
@@ -426,6 +571,7 @@ export class CrossCalcGame {
   }
 
   onPlayableCellClick(cellKey) {
+    if (this.wasJustPanning) return;
     if (this.sidebarMode === 'pool' && this.selectedTileId) {
       const tileId = this.selectedTileId;
       this.selectedTileId = null;
@@ -485,7 +631,12 @@ export class CrossCalcGame {
     this.animateAndRenderCell(cellKey);
     this.renderSidebar();
     this.updateEquationsStatus();
-    this.advanceToNextEmptyCell(cellKey);
+
+    if (this.isCellInInvalidEquation(cellKey)) {
+      this.selectCell(cellKey);
+    } else {
+      this.advanceToNextEmptyCell(cellKey);
+    }
   }
 
   placeNumberInCell(numberVal, cellKey) {
@@ -511,7 +662,12 @@ export class CrossCalcGame {
     this.animateAndRenderCell(cellKey);
     this.renderSidebar();
     this.updateEquationsStatus();
-    this.advanceToNextEmptyCell(cellKey);
+
+    if (this.isCellInInvalidEquation(cellKey)) {
+      this.selectCell(cellKey);
+    } else {
+      this.advanceToNextEmptyCell(cellKey);
+    }
   }
 
   clearCell(cellKey) {
@@ -603,8 +759,31 @@ export class CrossCalcGame {
     }
   }
 
+  isCellInInvalidEquation(cellKey) {
+    if (!this.board || !cellKey) return false;
+    const cell = this.board.grid.get(cellKey);
+    if (!cell || cell.type !== 'num') return false;
+
+    const maxInt = this.board.difficulty.maxInt;
+    for (const eqId of cell.eqIds) {
+      const eq = this.board.equations[eqId];
+      const cA = this.board.grid.get(eq.coords[0]);
+      const cB = this.board.grid.get(eq.coords[2]);
+      const cC = this.board.grid.get(eq.coords[4]);
+
+      const valA = cA.prefilled ? cA.value : cA.userValue;
+      const valB = cB.prefilled ? cB.value : cB.userValue;
+      const valC = cC.prefilled ? cC.value : cC.userValue;
+
+      if (isEquationStateInvalid(valA, eq.op, valB, valC, maxInt)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   updateEquationsStatus() {
-    const { grid, equations } = this.board;
+    const { grid, equations, difficulty } = this.board;
 
     for (const el of this.cellElements.values()) {
       el.classList.remove('eq-correct', 'eq-wrong');
@@ -622,17 +801,27 @@ export class CrossCalcGame {
       const valB = cB.prefilled ? cB.value : cB.userValue;
       const valC = cC.prefilled ? cC.value : cC.userValue;
 
-      if (valA !== null && valB !== null && valC !== null) {
-        const valid = isEquationMathValid(valA, eq.op, valB, valC);
-        if (valid) solvedCount++;
+      const allFilled = valA !== null && valB !== null && valC !== null;
+      const invalidState = isEquationStateInvalid(valA, eq.op, valB, valC, difficulty.maxInt);
 
+      if (allFilled && !invalidState) {
+        solvedCount++;
         for (const coord of eq.coords) {
           if (!cellStates.has(coord)) {
             cellStates.set(coord, { hasCorrect: false, hasWrong: false });
           }
-          const st = cellStates.get(coord);
-          if (valid) st.hasCorrect = true;
-          else st.hasWrong = true;
+          cellStates.get(coord).hasCorrect = true;
+        }
+      } else if (invalidState) {
+        for (const coord of eq.coords) {
+          const c = grid.get(coord);
+          // Highlight filled or operator cells in the invalid equation
+          if (allFilled || c.type === 'op' || c.prefilled || c.userValue !== null) {
+            if (!cellStates.has(coord)) {
+              cellStates.set(coord, { hasCorrect: false, hasWrong: false });
+            }
+            cellStates.get(coord).hasWrong = true;
+          }
         }
       }
     }
@@ -654,6 +843,7 @@ export class CrossCalcGame {
 
     this.updateEraseButtonState();
     this.updateHelperBanner();
+    this.updateScrollIndicators();
 
     if (solvedCount === totalEquations && totalEquations > 0 && !this.isSolved) {
       this.handleVictory();
@@ -663,10 +853,15 @@ export class CrossCalcGame {
   updateEraseButtonState() {
     if (!this.selectedCellKey || !this.board) {
       this.eraseSquareBtn.disabled = true;
+      if (this.sidebarFooter) this.sidebarFooter.classList.add('hidden');
       return;
     }
     const cell = this.board.grid.get(this.selectedCellKey);
-    this.eraseSquareBtn.disabled = !cell || cell.prefilled || cell.userValue === null;
+    const canClear = Boolean(cell && !cell.prefilled && cell.userValue !== null);
+    this.eraseSquareBtn.disabled = !canClear;
+    if (this.sidebarFooter) {
+      this.sidebarFooter.classList.toggle('hidden', !canClear);
+    }
   }
 
   updateHelperBanner() {

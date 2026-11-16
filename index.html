@@ -58,6 +58,24 @@
     <main class="game-workspace">
       <!-- Crossword Board Area -->
       <section class="board-stage" id="boardStage" aria-label="Math Crossword Grid">
+        <!-- Directional Off-Screen Board Indicators -->
+        <button id="scrollHintTop" class="scroll-hint scroll-hint-top hidden" type="button" aria-label="More board above">
+          <span class="scroll-hint-arrow">↑</span>
+          <span class="scroll-hint-label" id="scrollHintTopText">More above</span>
+        </button>
+        <button id="scrollHintBottom" class="scroll-hint scroll-hint-bottom hidden" type="button" aria-label="More board below">
+          <span class="scroll-hint-label" id="scrollHintBottomText">More below</span>
+          <span class="scroll-hint-arrow">↓</span>
+        </button>
+        <button id="scrollHintLeft" class="scroll-hint scroll-hint-left hidden" type="button" aria-label="More board to the left">
+          <span class="scroll-hint-arrow">←</span>
+          <span class="scroll-hint-label" id="scrollHintLeftText">More left</span>
+        </button>
+        <button id="scrollHintRight" class="scroll-hint scroll-hint-right hidden" type="button" aria-label="More board to the right">
+          <span class="scroll-hint-label" id="scrollHintRightText">More right</span>
+          <span class="scroll-hint-arrow">→</span>
+        </button>
+
         <div class="board-viewport" id="boardViewport">
           <div class="board-grid" id="boardGrid"></div>
         </div>
@@ -89,8 +107,8 @@
         <div id="keypadContainer" class="sidebar-body keypad-container hidden"></div>
 
         <!-- Bottom Controls in Sidebar -->
-        <div class="sidebar-footer">
-          <button id="eraseSquareBtn" class="sidebar-action-btn erase-btn" disabled>
+        <div id="sidebarFooter" class="sidebar-footer hidden">
+          <button id="eraseSquareBtn" class="sidebar-action-btn erase-btn" type="button">
             <span>⌫</span> Clear Selected Square
           </button>
         </div>

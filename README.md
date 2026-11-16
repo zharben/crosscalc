@@ -33,6 +33,9 @@ npm install
 # Start Vite development server
 npm run dev
 
+# Run unit tests
+npm test
+
 # Build production bundle into ./dist
 npm run build
 
